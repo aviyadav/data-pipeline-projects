@@ -1,0 +1,38 @@
+[project]
+name = "duckdb-default-db-ai-pipelines"
+version = "0.1.0"
+description = "Demonstration of DuckDB as the default database for AI pipelines"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "duckdb>=1.2",
+    "pyarrow>=18",
+    "pandas>=2.3",
+    "faker>=33",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "pydantic>=2.11",
+    "rich>=13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "httpx>=0.28",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.28",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "scripts"]
