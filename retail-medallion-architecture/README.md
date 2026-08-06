@@ -98,13 +98,31 @@ uv run generate-orders --rows 500
 uv run pipeline data/incoming/orders_<timestamp>.csv
 ```
 
+## Inspect the medallion layers
+
+After running the pipeline, inspect the data persisted in `warehouse.duckdb`:
+
+```shell
+uv run inspect_medallion_layers
+```
+
+The command prints PostgreSQL-style tables for:
+
+- raw orders in `bronze.orders_raw`;
+- validated orders in `silver.orders`;
+- rejected orders and their reasons in `silver.orders_quarantine`; and
+- aggregated sales in `gold.daily_sales_by_region`.
+
+Run the pipeline first so that the database and medallion tables exist.
+
 ## Run modules directly
 
-The generator and pipeline can also be run as Python modules:
+The generator, pipeline, and layer inspector can also be run as Python modules:
 
 ```shell
 uv run python -m retail_medallion_architecture.generate_orders --rows 500
 uv run python -m retail_medallion_architecture.pipeline data/incoming/orders_2026-08-06_201751_434618.csv
+uv run python -m retail_medallion_architecture.inspect_medallion_layers
 ```
 
 ## Check the source code

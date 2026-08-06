@@ -14,6 +14,7 @@ dependencies = [
 retail-medallion-architecture = "retail_medallion_architecture:main"
 generate-orders = "retail_medallion_architecture.generate_orders:main"
 pipeline = "retail_medallion_architecture.pipeline:main"
+inspect_medallion_layers = "retail_medallion_architecture.inspect_medallion_layers:main"
 
 [build-system]
 requires = ["uv_build>=0.12.2,<0.13.0"]
