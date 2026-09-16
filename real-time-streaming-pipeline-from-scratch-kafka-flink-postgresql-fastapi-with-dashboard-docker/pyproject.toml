@@ -1,0 +1,16 @@
+[project]
+name = "real-time-streaming-pipeline-from-scratch-kafka-flink-postgresql-fastapi-with-dashboard"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.141.1",
+    "kafka-python>=3.0.11",
+    "pandas>=3.0.5",
+    "plotly>=7.1.0",
+    "polars>=1.44.2",
+    "psycopg2-binary>=2.9.13",
+    "pyarrow>=25.0.1",
+    "requests>=2.34.2",
+    "streamlit>=1.64.0",
+    "uvicorn>=0.53.0",
+]
