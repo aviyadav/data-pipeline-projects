@@ -1,0 +1,11 @@
+# Pinned engine versions. These are what the reported numbers were produced
+# with; bump them deliberately, since both DuckDB and Polars change their
+# window/join execution strategies between minor releases.
+#
+# Polars is deliberately held on the 1.44 line: the benchmark uses the
+# `collect(engine="streaming")` entry point that the article's final attempt
+# relied on, and that keyword is not carried into Polars 2.x unchanged.
+duckdb==1.5.5
+polars==1.44.1
+pyarrow==25.0.1
+numpy==2.5.2

@@ -1,0 +1,130 @@
+# Docker Compose replacement for Databricks Serverless.
+#
+# The article's comparison target was PySpark on Databricks Serverless. Here the
+# comparison target is a self-hosted Apache Spark standalone cluster, built from
+# the official apache/spark image, running on the same machine and reading the
+# same generated parquet as DuckDB and Polars.
+#
+# Two volumes matter:
+#   ./            -> /work   scripts + results (small, inspectable on the host)
+#   bench-data    -> /data   the generated parquet (a Docker volume, NOT a bind
+#                            mount, so all three engines get native-speed I/O
+#                            instead of the ~8x slower Windows bind-mount path)
+#
+# Spark layout: one master + two workers. Jobs are submitted in client mode from
+# the one-shot `spark-client` service, so the driver shares the workspace mount
+# with the cluster.
+
+name: dpsk-bench
+
+x-bench-image: &bench-image dpsk-bench/bench:1.0
+
+services:
+  spark-master:
+    image: apache/spark:3.5.3
+    user: root
+    hostname: spark-master
+    container_name: dpsk-spark-master
+    command: ["/opt/spark/sbin/start-master.sh"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_WEBUI_PORT: "8080"
+      BENCH_DATA_DIR: /data
+      BENCH_RESULTS_DIR: /work/results
+    volumes:
+      - ./:/work
+      - bench-data:/data
+    ports:
+      - "8080:8080"
+    mem_limit: 1g
+    cpus: 1.0
+
+  spark-worker-1:
+    image: apache/spark:3.5.3
+    user: root
+    hostname: spark-worker-1
+    container_name: dpsk-spark-worker-1
+    depends_on:
+      - spark-master
+    command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+      SPARK_WORKER_CORES: "6"
+      SPARK_WORKER_MEMORY: "7g"
+      SPARK_WORKER_WEBUI_PORT: "8081"
+      BENCH_DATA_DIR: /data
+      BENCH_RESULTS_DIR: /work/results
+    volumes:
+      - ./:/work
+      - bench-data:/data
+    ports:
+      - "8081:8081"
+    mem_limit: 8g
+    cpus: 6.0
+
+  spark-worker-2:
+    image: apache/spark:3.5.3
+    user: root
+    hostname: spark-worker-2
+    container_name: dpsk-spark-worker-2
+    depends_on:
+      - spark-master
+    command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+      SPARK_WORKER_CORES: "6"
+      SPARK_WORKER_MEMORY: "7g"
+      SPARK_WORKER_WEBUI_PORT: "8082"
+      BENCH_DATA_DIR: /data
+      BENCH_RESULTS_DIR: /work/results
+    volumes:
+      - ./:/work
+      - bench-data:/data
+    ports:
+      - "8082:8082"
+    mem_limit: 8g
+    cpus: 6.0
+
+  # One-shot driver. Not started by `up`; used via `docker compose run`.
+  spark-client:
+    image: apache/spark:3.5.3
+    user: root
+    depends_on:
+      - spark-master
+    environment:
+      BENCH_DATA_DIR: /data
+      BENCH_RESULTS_DIR: /work/results
+      BENCH_ROWS: "${BENCH_ROWS:-5000000}"
+      BENCH_SEED: "${BENCH_SEED:-20251007}"
+      # Cluster tuning consumed by docker/spark/submit.sh.
+      SPARK_MASTER: "${SPARK_MASTER:-spark://spark-master:7077}"
+      SPARK_EXECUTOR_CORES: "${SPARK_EXECUTOR_CORES:-6}"
+      SPARK_EXECUTOR_MEMORY: "${SPARK_EXECUTOR_MEMORY:-6g}"
+      SPARK_EXECUTOR_OVERHEAD: "${SPARK_EXECUTOR_OVERHEAD:-512m}"
+      SPARK_SHUFFLE_PARTITIONS: "${SPARK_SHUFFLE_PARTITIONS:-200}"
+    volumes:
+      - ./:/work
+      - bench-data:/data
+    mem_limit: 4g
+    cpus: 2.0
+
+  # One-shot DuckDB/Polars/generator container. Not started by `up`.
+  bench:
+    image: *bench-image
+    build:
+      context: .
+      dockerfile: docker/bench/Dockerfile
+    environment:
+      BENCH_DATA_DIR: /data
+      BENCH_RESULTS_DIR: /work/results
+      BENCH_ROWS: "${BENCH_ROWS:-5000000}"
+      BENCH_SEED: "${BENCH_SEED:-20251007}"
+    volumes:
+      - ./:/work
+      - bench-data:/data
+    mem_limit: "${BENCH_MEM_LIMIT:-20g}"
+    cpus: 12.0
+
+volumes:
+  bench-data:
