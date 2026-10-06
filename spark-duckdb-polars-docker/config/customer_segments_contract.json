@@ -1,0 +1,36 @@
+{
+    "table_name": "gold.customer_segments",
+    "owner": "analytics@company.com",
+    "sla": {
+        "freshness": "daily",
+        "max_latency_hours": 24,
+        "availability": "99.9%"
+    },
+    "quality_rules": [
+        {
+            "name": "no_nulls_in_customer_id",
+            "sql": "SELECT COUNT(*) FROM {table} WHERE customer_id IS NULL",
+            "expected_result": 0
+        },
+        {
+            "name": "valid_segments_only",
+            "sql": "SELECT COUNT(*) FROM {table} WHERE segment NOT IN ('premium', 'standard', 'basic')",
+            "expected_result": 0
+        },
+        {
+            "name": "segment_distribution",
+            "sql": "SELECT COUNT(*) FROM {table} WHERE segment='premium'",
+            "expected_min": 1000,
+            "expected_max": 50000
+        }
+    ],
+    "lineage": {
+        "sources": [
+            "silver.customers_with_spending"
+        ],
+        "downstream": [
+            "bi_dashboard.marketing_campaigns",
+            "ml_models.churn_prediction"
+        ]
+    }
+}
